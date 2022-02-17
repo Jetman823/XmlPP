@@ -53,7 +53,7 @@ public:
 private:
 	std::shared_ptr<XMLNode> rootNode;
 	bool		doesBOMExist;
-	bool		ContainsAttributes(std::string& in);
+	bool		ContainsAttributes(std::string_view const& in);
 	std::string	BOMString;
 	ReadFlags	readFlags;
 	WriteFlags  writeFlags;

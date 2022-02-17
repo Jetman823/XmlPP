@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cctype>
 #include <functional>
+#include <string_view>
 constexpr auto ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 constexpr auto WHITESPACE = " \t\n\v\f\r";
 
@@ -39,6 +40,8 @@ ERR XMLDocument::Parse(std::string&  text)
 
 	if (text.length() == 0)
 		return ERR::ERR_FILE_NOT_FOUND;
+
+	//TODO: parse comments
 
 	//If flag is set, remove comments from input
 	/*if (readFlags & ReadFlags::IgnoreComments)
@@ -144,7 +147,6 @@ ERR XMLDocument::ParseComment(std::string& in)
 	return ERR::ERR_OK;
 }
 
-#include <string_view>
 ERR XMLDocument::ParseRootNode(std::string& in)
 {
 	ERR result = ERR::ERR_OK;
@@ -175,17 +177,20 @@ ERR XMLDocument::ParseRootNode(std::string& in)
 	}
 
 	//scan for and parse any potential child nodes
-//	std::string needle = "</" + rootNode->GetName();
 	size_t find = data.find(std::string_view("</" + rootNode->GetName()), last);
 	if (find != std::string_view::npos)
 	{
-		std::string_view childNodes = data.substr(last + 1, find - (last + 1));//in.find(std::string("</" + rootNode->GetName())) - (last + 1));
+		std::string_view childNodes = data.substr(last + 1, find - (last + 1));
 		result = ParseChildNodeRecursively(childNodes, rootNode);
 		if (result != ERR::ERR_OK)
 		{
 			return result;
 		}
 	}
+
+	//write doc and compare result to existing xml file; to be deleted at a later date.
+	std::ofstream outDoc("comparitor.xml");
+	WriteDoc(outDoc);
 
 
 	
@@ -232,7 +237,6 @@ ERR XMLDocument::ParseChildNodeRecursively(std::string_view& in, std::shared_ptr
 		size_t find = in.find(std::string("</" + childNode->GetName()), nodeEnd);
 		if (find != std::string_view::npos)
 		{
-			//Not supporting mixexd content, so no need to handle its logic
 			std::string_view childNodes = in.substr(nodeEnd + 1, find - (nodeEnd + 1));
 			if (childNodes.find_first_not_of(WHITESPACE) == std::string_view::npos)
 			{
@@ -241,10 +245,12 @@ ERR XMLDocument::ParseChildNodeRecursively(std::string_view& in, std::shared_ptr
 				continue;
 			}
 
+			//if no childnodes found, set innertext. NOTE: not supporting mixed content yet
 			if (childNodes.find('<') == std::string_view::npos)
 			{
 				childNode->SetInnerText(std::string(childNodes));
 			}
+			//otherwise attempt to parse the child nodes
 			else
 			{
 				result = ParseChildNodeRecursively(childNodes, childNode);
@@ -285,7 +291,8 @@ ERR XMLDocument::ParseTag(std::string_view& nodeData, std::shared_ptr<XMLNode> c
 
 	targetNode->SetName(nodeName);
 
-	if (nodeData.find_first_of('\'') != std::string_view::npos || nodeData.find_first_of('"') != std::string_view::npos)
+	//if the tag for the node contains any quotes, attempt to parse attribute data. NOTE: single and double quotes not handled yet
+	if (ContainsAttributes(nodeData) == true)
 	{
 
 		std::string_view attributes = nodeData.substr(nodeData.find_first_of(' '));
@@ -300,7 +307,7 @@ ERR XMLDocument::ParseTag(std::string_view& nodeData, std::shared_ptr<XMLNode> c
 ERR XMLDocument::ParseAttributes(std::string_view& in, std::shared_ptr<XMLNode>const& targetNode)
 {
 	size_t pos = 0;
-	while (pos != in.length())
+	while (1)
 	{
 
 		size_t nameFirst = in.find_first_not_of(WHITESPACE,pos);
@@ -333,13 +340,13 @@ ERR XMLDocument::ParseAttributes(std::string_view& in, std::shared_ptr<XMLNode>c
 	return ERR::ERR_OK;
 }
 
-bool XMLDocument::ContainsAttributes(std::string& in)
+bool XMLDocument::ContainsAttributes(std::string_view const& in)
 {
 	if (in.length() == 0)
 		return false;
 
 	///Xml Allows for quotes to be apostrophe or quote enclosed
-	if (in.find("\"") == std::string::npos && in.find("'") == std::string::npos)
+	if (in.find("\"") == std::string_view::npos && in.find("'") == std::string_view::npos)
 		return false;
 
 	return true;
