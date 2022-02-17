@@ -1,0 +1,112 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+
+<!--  apHp="75" dps="60" -->
+<XML id="blitzkrieg">
+<EVENT id="test" name="event">
+		<ENHANCE_PLAYER          />
+		<ENHANCE_NPC nextTime="90" maxCount="20" enhancedRatio="0.06" />
+		<BUILDING reduceDamageRatioFromPlayer="0.93" checkDelay="1.0">
+			<BARRICADE dist="800" reduceDamageRatio="0.5" recoveryMagazineRatio="0.1" recoveryDelay="2.0"/>
+			<RADAR dist="600" recoveryApHpRatio="0.1" recoveryMagazineRatio="0.1" recoveryDelay="0.7"/>
+		</BUILDING>
+		<HONOR_ITEM_LIST respawnTime="120">
+			<HONOR_ITEM actor="tresure1" />
+			<HONOR_ITEM actor="tresure2" />
+			<HONOR_ITEM actor="tresure3" />
+			<HONOR_ITEM actor="tresure4" />
+		</HONOR_ITEM_LIST>
+		<REINFORCE_LIST>
+			<REINFORCE barricadeCount="9" state="summon_zealot" alliance="true" />
+			<REINFORCE barricadeCount="6" state="summon_cleric" alliance="true" />
+			<REINFORCE barricadeCount="3" state="summon_knight" alliance="true" />
+			<REINFORCE barricadeCount="0" state="summon_terminator" alliance="false" />
+		</REINFORCE_LIST>
+	</EVENT>
+	
+
+	<REWARD baseBounty="50" 
+			baseExp="50"
+			minTime="420"
+			minHonor="2000"
+			winnerMedal="15"
+			loserMedal="5"
+			minuteBonusMedal="1"
+			minuteBonusMedalMax="20"
+			minPlayCount="10"
+			minPlayCountBonusMedal="10"
+			WaitingTime="60"
+			WaitingRewardMedal="1"
+			WaitingRewardMax="80"
+			WinXPBonusMVP="0.15"
+			WinBPBonusMVP="0.15"
+			WinMedalBonusMVP="0.15"
+			LoseXPBonusMVP="0.45"
+			LoseBPBonusMVP="0.45"
+			LoseMedalBonusMVP="0.45"
+			/>
+
+	<CLASS_TABLE>
+		<HUNTER aquirHonorRatio="0.2" />
+		<SLAUGHTER enchantFireDamage="3" fireDamageDuration="4.0" addMagazineRatio="0.4" />
+		<TRICKSTER recoveryApHpRatio="0.33" recoveryMagazineRatio="1.0" reduceDamageRatio="1.0"/>
+		<GLADIATOR enhanceMeleeDPS="60" addMaxApHp="60" />
+		<DUELIST addShotgunMagazine="3" enhanceShotgunDamage="1" />
+		<INCINERATOR enchantFireDamage="7" fireDamageDuration="4.0" reduceDPS="20" />
+		<COMBATOFFICER reduceDamageRatioForMyTeam="0.15" distance="800" checkDelay="1.0" />
+		<ASSASSIN enhanceDamageRatio="0.15" />
+		<TERRORIST enhanceDamageRatioAtBuilding="1.0" />
+	</CLASS_TABLE>
+	
+
+	<UPGRADE requireHonor="250:325:400:1200"
+		dps="40:40:40:120" reduceShotDelayRatio="0.25:0.25:0.25:0.75"
+		hpAp="65:65:65:195" enchantFire="7:7:7:21" fireDamageDuration="4.0"
+		magazineRatio="0.5:0.5:0.5:1.5" reviveRatio="0.2:0.35:0.5:0.7" />
+		
+	<WEAPON>
+	<DPS smg="1.1" rifle="1.0" machineGun="1.0" pistol="1.3" revolver="1.15"
+		shotGun="0.1" roket="0.9" dagger="0.95" katana="0.9" doubleKatana="0.9" />
+	<DELAY smg="85" rifle="95" machineGun="90" pistol="200" revolver="400"
+			shotGun="1000" roket="1000" dagger="326" katana="329" doubleKatana="329" />
+	</WEAPON>
+	
+	<SPAWN_LIST>
+		<SPAWN actor="radar_red" num="1" team="2" />
+		<SPAWN actor="radar_blue" num="1" team="3" />
+		<SPAWN actor="barricade_red" num="12" team="2" />
+		<SPAWN actor="barricade_blue" num="12" team="3" />
+		<SPAWN actor="guardian" num="1" team="2" />
+		<SPAWN actor="guardian" num="1" team="3" />
+	</SPAWN_LIST>
+	
+	<HONOR_LIST>
+		<PLYAER_HONOR single="50" assist="25" singleTotalDiv="50.0" assistTotalDiv="100.0" killDelay="5.0" assistDelay="5.0" />
+
+		<HONOR actorType="barricade" single="30" all="60"/>
+		<HONOR actorType="honor_item" single="20" all="35"/>
+		<HONOR actorType="knifeman" single="5" all="0"/>
+		<HONOR actorType="throwman" single="10" all="0"/>
+		<HONOR actorType="zealot" single="40" all="0"/>
+		<HONOR actorType="cleric" single="50" all="0"/>
+		<HONOR actorType="knight" single="60" all="0"/>		
+		<HONOR actorType="terminator" single="50" all="150"/>
+		<HONOR_SOUND lessGainHonor="Blitzkrieg/LessGainHonor" regularGainHonor="Blitzkrieg/RegularGainHonor" moreGainHonor="Blitzkrieg/MoreGainHonor"/>
+	</HONOR_LIST>
+	
+	<ROUTE_LIST>
+		<ROUTE id="100" route1="route_top_2" route2="route_top_3" route3="route_top_4" route4="route_top_5" route5="route_top_6" route6="route_top_7" route7="route_top_8" /> 
+		<ROUTE id="101" route1="route_top_7" route2="route_top_6" route3="route_top_5" route4="route_top_4" route5="route_top_3" route6="route_top_2" route7="route_top_1" /> 
+		<ROUTE id="210" route1="route_mid1_2" route2="route_mid1_3" route3="route_mid1_4" route4="route_mid1_5" route5="route_mid1_6" route6="route_mid1_7" /> 
+		<ROUTE id="211" route1="route_mid1_6" route2="route_mid1_5" route3="route_mid1_4" route4="route_mid1_3" route5="route_mid1_2" route6="route_mid1_1" /> 
+		<ROUTE id="220" route1="route_mid2_2" route2="route_mid2_3" route3="route_mid2_4" route4="route_mid2_5" route5="route_mid2_6" route6="route_mid1_7" /> 
+		<ROUTE id="221" route1="route_mid2_6" route2="route_mid2_5" route3="route_mid2_4" route4="route_mid2_3" route5="route_mid2_2" route6="route_mid1_1" /> 
+		<ROUTE id="300" route1="route_bot_2" route2="route_bot_3" route3="route_bot_4" route4="route_bot_5" route5="route_bot_6" route6="route_bot_7" route7="route_bot_8" /> 
+		<ROUTE id="301" route1="route_bot_7" route2="route_bot_6" route3="route_bot_5" route4="route_bot_4" route5="route_bot_3" route6="route_bot_2" route7="route_bot_1" /> 
+	</ROUTE_LIST>
+
+	<EVENT_MESSAGE viewTime="4" delayTime="1.0" damagedRadarCoolDown="2" sound_Benefit="Blitzkrieg/EventBenefit" sound_Loss="Blitzkrieg/EventLoss">
+	</EVENT_MESSAGE>
+	
+	<HELP_MESSAGE viewTime="4" dist="500" honor="300" sound="Blitzkrieg/Help"/>
+	<FLAGTEST/>
+</XML>
