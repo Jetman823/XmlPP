@@ -153,8 +153,8 @@ ERR XMLDocument::ParseRootNode(std::string& in)
 
 	std::string_view data = in;
 
-	size_t first = in.find("<");
-	size_t last = in.find_first_of(">");
+	size_t first = in.find('<');
+	size_t last = in.find_first_of('>');
 
 	if (first == std::string::npos || last == std::string::npos)
 	{
@@ -189,8 +189,8 @@ ERR XMLDocument::ParseRootNode(std::string& in)
 	}
 
 	//write doc and compare result to existing xml file; to be deleted at a later date.
-	std::ofstream outDoc("comparitor.xml");
-	WriteDoc(outDoc);
+	//std::ofstream outDoc("comparitor.xml");
+	//WriteDoc(outDoc);
 
 
 	
@@ -206,7 +206,7 @@ ERR XMLDocument::ParseChildNodeRecursively(std::string_view& in, std::shared_ptr
 	while (1)
 	{
 
-		size_t nodeStart = in.find_first_of('<', currPos);
+		size_t nodeStart = in.find('<', currPos);
 		size_t nodeEnd = in.find_first_of('>', nodeStart);
 
 		if (nodeStart == std::string_view::npos || nodeEnd == std::string_view::npos)
@@ -306,37 +306,48 @@ ERR XMLDocument::ParseTag(std::string_view& nodeData, std::shared_ptr<XMLNode> c
 ///TODO: handle logic correctly, account for people making mistakes???
 ERR XMLDocument::ParseAttributes(std::string_view& in, std::shared_ptr<XMLNode>const& targetNode)
 {
-	size_t pos = 0;
-	while (1)
+	size_t attrCount = std::count(in.begin(), in.end(), '=');
+
+	size_t currPos = 0;
+
+	for (size_t i = 0; i < attrCount; ++i)
 	{
 
-		size_t nameFirst = in.find_first_not_of(WHITESPACE,pos);
-		if (nameFirst == std::string_view::npos)
-			break;
-		size_t nameLast = in.find('=', nameFirst + 1);
-		if (nameLast == std::string_view::npos)
-			break;
+		auto outValue = [](size_t& currPos, std::string_view& const instr)
+		{
+			std::string out = "";
+			for (size_t i = currPos; i < instr.size(); ++i)
+			{
+				const char character = instr[i];
+				if (character == '=')
+				{
+					currPos = i + 1;
+					break;
+				}
+				else
+				{
+					if (character == ' ' || character == '\"' || character == '\'')
+					{
+						++currPos;
+						continue;
+					}
+					out.push_back(instr.at(i));
+					++currPos;
+				}
+			}
+			return out;
+		};
 
-		std::shared_ptr<XMLAttribute> attr = std::make_shared<XMLAttribute>();
+		std::unique_ptr<XMLAttribute> attr = std::make_unique<XMLAttribute>(outValue(currPos, in), outValue(currPos, in));
 
-
-		std::string attrName = std::string(in.substr(nameFirst, nameLast - nameFirst));
-
-		attr->SetName(attrName);
-
-		size_t attrFirst = in.find("\"", nameLast);
-		size_t attrLast = in.find("\"", attrFirst + 1);
-
-		std::string attrValue = std::string(in.substr(attrFirst + 1, attrLast - (attrFirst + 1)));
-		attr->SetValue(attrValue);
 
 		ERR result = targetNode->AddAttribute(std::move(attr));
 		if (result != ERR::ERR_OK)
 		{
 			return result;
 		}
-		pos = attrLast + 1;
 	}
+
 	return ERR::ERR_OK;
 }
 
@@ -346,7 +357,7 @@ bool XMLDocument::ContainsAttributes(std::string_view const& in)
 		return false;
 
 	///Xml Allows for quotes to be apostrophe or quote enclosed
-	if (in.find("\"") == std::string_view::npos && in.find("'") == std::string_view::npos)
+	if (in.find('\"') == std::string_view::npos && in.find('\'') == std::string_view::npos)
 		return false;
 
 	return true;

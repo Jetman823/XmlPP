@@ -9,7 +9,7 @@ class XMLNode
 private:
 	std::string name;
 	std::string innerText;
-	std::vector<std::shared_ptr<XMLAttribute>> attributes;
+	std::vector<std::unique_ptr<XMLAttribute>> attributes;
 	std::vector<std::shared_ptr<XMLNode>> childNodes;
 	std::vector<std::string> comments;
 public:
@@ -27,12 +27,12 @@ public:
 	void SetInnerText(const std::string value) { innerText = value; }
 	std::string GetInnerText() const& { return innerText; }
 
-	std::vector<std::shared_ptr<XMLAttribute>> const& GetAttributes() const { return attributes; }
+	std::vector<std::unique_ptr<XMLAttribute>> const& GetAttributes() const { return attributes; }
 	std::vector<std::shared_ptr<XMLNode>> const& GetChildNodes() const { return childNodes; }
 
 
 	//give users a choice of either adding a pointer to the function, or creating the pointer in the function, then adding the pointer to the node
-	ERR AddAttribute(std::shared_ptr<XMLAttribute>&& attribute);
+	ERR AddAttribute(std::unique_ptr<XMLAttribute>&& attribute);
 	ERR AddAttribute(const char* attrName, const char* attrValue);
 	bool AddChildNode(std::shared_ptr<XMLNode>&& childNode);
 	//
