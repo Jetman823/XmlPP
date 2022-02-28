@@ -46,7 +46,7 @@ ERR XMLNode::AddAttribute(const char* attrName, const char* attrValue)
 }
 
 
-bool XMLNode::AddChildNode(std::shared_ptr<XMLNode>&& childNode)
+bool XMLNode::AddChildNode(std::unique_ptr<XMLNode>&& childNode)
 {
 	childNodes.emplace_back(std::move(childNode));
 	return true;
@@ -77,7 +77,7 @@ XMLNode* const XMLNode::GetChildNode(size_t const& index)
 	return childNodes.at(index).get(); 
 }
 
-bool const XMLNode::ChildExists(std::shared_ptr<XMLNode> const& node)
+bool const XMLNode::ChildExists(std::unique_ptr<XMLNode> const& node)
 {
 	///you shouldn't be trying to find a nullptr, but doesn't hurt to have a safety check anyways
 	if (node == nullptr)

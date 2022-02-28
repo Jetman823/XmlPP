@@ -8,7 +8,7 @@ private:
 	std::string value;
 public:
 	XMLAttribute() noexcept = default;
-	XMLAttribute(std::string attrName, std::string attrValue) noexcept;
+	XMLAttribute(std::string_view const& attrName, std::string_view const& attrValue) noexcept;
 	~XMLAttribute() = default;
 
 	void SetValue(const std::string& inValue) { value = inValue; }

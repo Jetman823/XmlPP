@@ -29,8 +29,6 @@ XMLDocument::~XMLDocument() noexcept
 
 void XMLDocument::Close()
 {
-	rootNode.reset();
-	decl.reset();
 }
 
 //Parser functionality
@@ -40,6 +38,8 @@ ERR XMLDocument::Parse(std::string&  text)
 
 	if (text.length() == 0)
 		return ERR::ERR_FILE_NOT_FOUND;
+
+	std::string_view data = text;
 
 	//TODO: parse comments
 
@@ -58,19 +58,19 @@ ERR XMLDocument::Parse(std::string&  text)
 	//If flag is not set, parse declaration
 	if (readFlags &~ ReadFlags::IgnoreDecl) 
 	{
-		result = ParseDecl(text);
+		result = ParseDecl(data);
 		if (result != ERR::ERR_OK)
 		{
 			return result;
 		}
 	}
 
-	result = ParseRootNode(text);
+	result = ParseRootNode(data);
 
 	return result;
 }
 
-ERR XMLDocument::ParseDecl(std::string& in)
+ERR XMLDocument::ParseDecl(std::string_view& in)
 {
 	decl = std::make_shared<XMLDecl>();
 
@@ -85,7 +85,7 @@ ERR XMLDocument::ParseDecl(std::string& in)
 		return ERR::ERR_FATAL_NO_DECL_DECLARED;
 	}
 
-	std::string contents = in.substr(first + 5,last - (first + 5));
+	std::string contents = std::string(in.substr(first + 5, last - (first + 5)));
 
 	first = contents.find("version=\"");
 	if (first != std::string::npos)
@@ -147,14 +147,14 @@ ERR XMLDocument::ParseComment(std::string& in)
 	return ERR::ERR_OK;
 }
 
-ERR XMLDocument::ParseRootNode(std::string& in)
+ERR XMLDocument::ParseRootNode(std::string_view& in)
 {
 	ERR result = ERR::ERR_OK;
 
-	std::string_view data = in;
+	//find opening tag and skip
+	size_t first = in.find('<') + 1;
 
-	size_t first = in.find('<');
-	size_t last = in.find_first_of('>');
+	size_t last = in.find_first_of('>',first);
 
 	if (first == std::string::npos || last == std::string::npos)
 	{
@@ -162,13 +162,13 @@ ERR XMLDocument::ParseRootNode(std::string& in)
 	}
 
 	//if you don't have anything between the opening and closing tag, there can't be a root node. disgregard and return an error
-	std::string_view nodeData = data.substr(first + 1, last - (first + 1));
+	std::string_view nodeData = in.substr(first, last - first);
 	if (nodeData.empty())
 	{
 		return ERR::ERR_NO_ROOT_NODE_FOUND;
 	}
 
-	rootNode = std::make_shared<XMLNode>();
+	rootNode = std::make_unique<XMLNode>();
 
 	result = ParseTag(nodeData, rootNode);
 	if (result != ERR::ERR_OK)
@@ -177,10 +177,10 @@ ERR XMLDocument::ParseRootNode(std::string& in)
 	}
 
 	//scan for and parse any potential child nodes
-	size_t find = data.find(std::string_view("</" + rootNode->GetName()), last);
+	size_t find = in.find(std::string_view("</" + std::string(rootNode->GetName())), last);
 	if (find != std::string_view::npos)
 	{
-		std::string_view childNodes = data.substr(last + 1, find - (last + 1));
+		std::string_view childNodes = in.substr(last + 1, find - (last + 1));
 		result = ParseChildNodeRecursively(childNodes, rootNode);
 		if (result != ERR::ERR_OK)
 		{
@@ -199,26 +199,37 @@ ERR XMLDocument::ParseRootNode(std::string& in)
 
 //TODO: optionally parse comment? optimize this entire function.
 //note: since we're not erasing any text from the document string, currPos is used to keep track of where we're at in the parsing process
-ERR XMLDocument::ParseChildNodeRecursively(std::string_view& in, std::shared_ptr<XMLNode> const& parentNode, size_t&& currPos)
+ERR XMLDocument::ParseChildNodeRecursively(std::string_view& in, std::unique_ptr<XMLNode> const& parentNode, size_t currPos)
 {
 	ERR result = ERR::ERR_OK;
 
 	while (1)
 	{
 
-		size_t nodeStart = in.find('<', currPos);
-		size_t nodeEnd = in.find_first_of('>', nodeStart);
+		while (in[currPos] != '<')
+		{
+			++currPos;
+		}
 
-		if (nodeStart == std::string_view::npos || nodeEnd == std::string_view::npos)
+		//skip the opening tag character
+		++currPos;
+
+		//search for end of opening tag
+		size_t nodeEnd = in.find_first_of('>', currPos);
+
+		if (nodeEnd == std::string_view::npos)
 			break;
 
-		std::string_view nodeData = in.substr(nodeStart + 1, nodeEnd - (nodeStart + 1));
-		if (nodeData.empty() == true)
+		std::string_view nodeTag = in.substr(currPos, nodeEnd - currPos);
+		if (nodeTag.empty() == true)
 			break;
 
-		std::shared_ptr<XMLNode> childNode = std::make_shared<XMLNode>();
+		//advance to the end of the opening tag
+		currPos = nodeEnd + 1;
 
-		result = ParseTag(nodeData, childNode);
+		std::unique_ptr<XMLNode> childNode = std::make_unique<XMLNode>();
+
+		result = ParseTag(nodeTag, childNode);
 		if (result != ERR::ERR_OK)
 		{
 			return result;
@@ -232,42 +243,45 @@ ERR XMLDocument::ParseChildNodeRecursively(std::string_view& in, std::shared_ptr
 			continue;
 		}
 
-		//otherwise, check for childnodes and parse accordingly
-		//todo: optimize this!!!
-		size_t find = in.find(std::string("</" + childNode->GetName()), nodeEnd);
-		if (find != std::string_view::npos)
+		auto const GetChildData = [](std::string_view& in, size_t& currPos, std::string_view const& nodeName)
 		{
-			std::string_view childNodes = in.substr(nodeEnd + 1, find - (nodeEnd + 1));
-			if (childNodes.find_first_not_of(WHITESPACE) == std::string_view::npos)
+			size_t foundChildData = in.find(nodeName, currPos);
+			std::string_view data = "";
+			if (foundChildData != std::string_view::npos)
 			{
-				currPos = find + childNodes.length();
-				parentNode->AddChildNode(std::move(childNode));
-				continue;
-			}
+				data = in.substr(currPos, foundChildData - currPos - 2);
+				currPos = foundChildData + 1;
 
-			//if no childnodes found, set innertext. NOTE: not supporting mixed content yet
-			if (childNodes.find('<') == std::string_view::npos)
-			{
-				childNode->SetInnerText(std::string(childNodes));
 			}
-			//otherwise attempt to parse the child nodes
-			else
-			{
-				result = ParseChildNodeRecursively(childNodes, childNode);
-				if (result != ERR::ERR_OK)
-					break;
-			}
-			currPos = find + std::string_view("</" + childNode->GetName()).length();// length();
+			return data;
+		};
+
+		//NOTE: not supporting mixed content at the moment. if mixex content no guarantees the parser will handle it correctly;
+		std::string_view childData = GetChildData(in, currPos,childNode->GetName());
+		if (childData.empty() || childData.find_first_not_of(WHITESPACE) == std::string_view::npos)
+		{
 			parentNode->AddChildNode(std::move(childNode));
 			continue;
 		}
 		else
-			break;
+		{
+			if (childData.find('<') == std::string_view::npos)
+			{
+				childNode->SetInnerText(childData);
+			}
+
+			result = ParseChildNodeRecursively(childData, childNode, 0);
+			if (result != ERR::ERR_OK)
+			{
+				return result;
+			}
+			parentNode->AddChildNode(std::move(childNode));
+		}
 	}
 	return result;
 }
 
-ERR XMLDocument::ParseTag(std::string_view& nodeData, std::shared_ptr<XMLNode> const& targetNode)
+ERR XMLDocument::ParseTag(std::string_view const& nodeData, std::unique_ptr<XMLNode> const& targetNode)
 {
 
 	ERR result = ERR::ERR_OK;
@@ -278,68 +292,90 @@ ERR XMLDocument::ParseTag(std::string_view& nodeData, std::shared_ptr<XMLNode> c
 	if (nameEnd == std::string_view::npos)
 	{
 		nameEnd = nodeData.find_first_of('/');
-		std::string name = std::string(nodeData.substr(0, nameEnd));
-		
-		targetNode->SetName(name);
+
+		targetNode->SetName(nodeData.substr(0,nameEnd));
 
 		return ERR::ERR_OK;
 	}
 
 	/*node may have attributes, or someone may have just put in a ton of spaces for no reason. either way
 	it'll still parse the name correctly*/
-	std::string nodeName = std::string(nodeData.substr(0, nameEnd));
-
-	targetNode->SetName(nodeName);
+	targetNode->SetName(nodeData.substr(0,nameEnd));
 
 	//if the tag for the node contains any quotes, attempt to parse attribute data. NOTE: single and double quotes not handled yet
 	if (ContainsAttributes(nodeData) == true)
 	{
-
-		std::string_view attributes = nodeData.substr(nodeData.find_first_of(' '));
-		result = ParseAttributes(attributes, targetNode);
+		result = ParseAttributes(nodeData.substr(nameEnd), targetNode);
 	}
 
 	return result;
 }
 
 
-///TODO: handle logic correctly, account for people making mistakes???
-ERR XMLDocument::ParseAttributes(std::string_view& in, std::shared_ptr<XMLNode>const& targetNode)
+ERR XMLDocument::ParseAttributes(std::string_view const& in, std::unique_ptr<XMLNode>const& targetNode)
 {
+	//get a count of how many attributes are contained within the xml node. NOTE: change later, equal sign is allowed within the attributes value
 	size_t attrCount = std::count(in.begin(), in.end(), '=');
 
 	size_t currPos = 0;
-
 	for (size_t i = 0; i < attrCount; ++i)
 	{
-
-		auto outValue = [](size_t& currPos, std::string_view& const instr)
+		auto const outValue = [](size_t& currPos, std::string_view const& instr, bool isName)
 		{
+			bool openingAttrTag = false;
 			std::string out = "";
 			for (size_t i = currPos; i < instr.size(); ++i)
 			{
 				const char character = instr[i];
-				if (character == '=')
+				if(isName)
 				{
-					currPos = i + 1;
-					break;
-				}
-				else
-				{
-					if (character == ' ' || character == '\"' || character == '\'')
+					if (character == ' ')
 					{
 						++currPos;
 						continue;
 					}
-					out.push_back(instr.at(i));
-					++currPos;
+					if (character == '=')
+					{
+						currPos = i + 1;
+						break;
+					}
 				}
+				else
+				{
+					if (character == '\"' || character == '\'')
+					{
+						if (openingAttrTag == false)
+						{
+							++currPos;
+							openingAttrTag = true;
+							continue;
+						}
+						else
+						{
+							currPos = i + 1;
+							break;
+						}
+					}
+				}
+				out.push_back(character);
+				++currPos;
 			}
 			return out;
 		};
 
-		std::unique_ptr<XMLAttribute> attr = std::make_unique<XMLAttribute>(outValue(currPos, in), outValue(currPos, in));
+		std::string const name = outValue(currPos, in,true);
+		std::string const value = outValue(currPos, in,false);
 
+		if (name.empty() || value.empty())
+		{
+			break;
+		}
+
+		if(name.find_first_not_of(WHITESPACE) ==  std::string::npos)
+			break;
+
+		//TODO: if value was wrapped in single quote or double quote, check if &apos; or &quote; is inside the value. if so, convert that to ' or "
+		std::unique_ptr<XMLAttribute> attr = std::make_unique<XMLAttribute>(name, value);
 
 		ERR result = targetNode->AddAttribute(std::move(attr));
 		if (result != ERR::ERR_OK)
@@ -366,9 +402,9 @@ bool XMLDocument::ContainsAttributes(std::string_view const& in)
 //end parser functionality
 
 //Writer functionality : Optional TODO - AddComments function
-std::shared_ptr<XMLNode> XMLDocument::CreateRootNode(const char* rootName, const char* attrName, const char* attrValue)
+std::unique_ptr<XMLNode> XMLDocument::CreateRootNode(const char* rootName, const char* attrName, const char* attrValue)
 {
-	rootNode = std::make_shared<XMLNode>(rootName);
+	rootNode = std::make_unique<XMLNode>(rootName);
 
 	if (attrName != nullptr && attrValue != nullptr)
 		rootNode->AddAttribute(attrName, attrValue);
@@ -426,7 +462,7 @@ ERR XMLDocument::WriteDoc(std::ostream&out)
 }
 
 ///TODO: try and insert comments specifically where user wants them, rather than just inserting them all inside the node at one spot.
-ERR XMLDocument::WriteNodesRecursively(std::ostream& in, std::shared_ptr<XMLNode> const& currNode, int indentCount)
+ERR XMLDocument::WriteNodesRecursively(std::ostream& in, std::unique_ptr<XMLNode> const& currNode, int indentCount)
 {
 	for (auto& itor : currNode->GetChildNodes())
 	{

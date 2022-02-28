@@ -51,32 +51,31 @@ public:
 
 	std::shared_ptr<XMLDecl>  decl;
 private:
-	std::shared_ptr<XMLNode> rootNode;
+	std::unique_ptr<XMLNode> rootNode;
 	bool		doesBOMExist;
 	bool		ContainsAttributes(std::string_view const& in);
 	std::string	BOMString;
 	ReadFlags	readFlags;
 	WriteFlags  writeFlags;
-	std::string Seek(std::string& in,size_t seekPos);
 public:
 	//shared between parser/writer
 	std::vector<std::string> comments;
-	std::shared_ptr<XMLNode> const& GetRootNode() { return rootNode; }
+	std::unique_ptr<XMLNode> const& GetRootNode() { return rootNode; }
 	bool const&    BomExists() { return doesBOMExist; }
 	std::string const& GetBOM() { return BOMString; }
 //parser functionality
 	ERR			   Parse(std::string& text);
-	ERR			   ParseDecl(std::string& in);
+	ERR			   ParseDecl(std::string_view& in);
 	ERR			   ParseComment(std::string& in);
-	ERR			   ParseRootNode(std::string& in);
-	ERR			   ParseChildNodeRecursively(std::string_view& in, std::shared_ptr<XMLNode> const& parentNode, size_t&& currPos = 0);
-	ERR			   ParseTag(std::string_view& in, std::shared_ptr<XMLNode> const& parentNode);
-	ERR			   ParseAttributes(std::string_view& in, std::shared_ptr<XMLNode> const& targetNode);
+	ERR			   ParseRootNode(std::string_view& in);
+	ERR			   ParseChildNodeRecursively(std::string_view& in, std::unique_ptr<XMLNode> const& parentNode, size_t currPos = 0);
+	ERR			   ParseTag(std::string_view const& in, std::unique_ptr<XMLNode> const& parentNode);
+	ERR			   ParseAttributes(std::string_view const& in, std::unique_ptr<XMLNode> const& targetNode);
 //writer functionality
 public:
 	void		   CreateDeclaration(const char* version, const char* encoding = 0, bool isStandalone = false);
-	std::shared_ptr<XMLNode>	   CreateRootNode(const char* rootName, const char* attrName = 0, const char* attrValue = 0);
-	ERR			   WriteNodesRecursively(std::ostream& out, std::shared_ptr<XMLNode> const& node, int indentCount);
+	std::unique_ptr<XMLNode>	   CreateRootNode(const char* rootName, const char* attrName = 0, const char* attrValue = 0);
+	ERR			   WriteNodesRecursively(std::ostream& out, std::unique_ptr<XMLNode> const& node, int indentCount);
 
 	friend std::ostream& operator<<(std::ostream& out, XMLDocument& doc)
 	{
