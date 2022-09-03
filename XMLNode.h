@@ -22,10 +22,10 @@ public:
 	void Close();
 
 	void SetName(const std::string_view& value) { name = value; }
-	std::string_view GetName() const& { return name; }
+	std::string GetName() const& { return std::string(name); }
 
 	void SetInnerText(const std::string_view& value) { innerText = value; }
-	std::string_view GetInnerText() const& { return innerText; }
+	std::string GetInnerText() const& { return std::string(innerText); }
 
 	std::vector<std::unique_ptr<XMLAttribute>> const& GetAttributes() const { return attributes; }
 	std::vector<std::unique_ptr<XMLNode>> const& GetChildNodes() const { return childNodes; }

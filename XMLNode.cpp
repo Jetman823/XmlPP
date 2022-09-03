@@ -32,7 +32,7 @@ ERR XMLNode::AddAttribute(std::unique_ptr<XMLAttribute>&& attribute)
 ERR XMLNode::AddAttribute(const char* attrName, const char* attrValue)
 {
 
-	auto result = std::find_if(attributes.begin(), attributes.end(), [&](std::unique_ptr<XMLAttribute> const& attr) {return strcmp(attr->GetName().c_str(), attrName) == 0; });
+	auto result = std::find_if(attributes.begin(), attributes.end(), [&](std::unique_ptr<XMLAttribute> const& attr) {return strcmp(attr->GetName().data(), attrName) == 0; });
 
 	///can't have duplicate attributes
 	if (result != attributes.end())
@@ -54,7 +54,7 @@ bool XMLNode::AddChildNode(std::unique_ptr<XMLNode>&& childNode)
 
 XMLAttribute* const XMLNode::GetAttribute(std::string const& attrName)
 {
-	auto attribute = std::find_if(attributes.begin(), attributes.end(), [&](std::unique_ptr<XMLAttribute> const&  attr) {return strcmp(attrName.c_str(), attr->GetName().c_str()) == 0; });
+	auto attribute = std::find_if(attributes.begin(), attributes.end(), [&](std::unique_ptr<XMLAttribute> const&  attr) {return strcmp(attrName.c_str(), attr->GetName().data()) == 0; });
 	if (attribute == attributes.end())
 	{
 		return nullptr;
@@ -90,7 +90,7 @@ bool const XMLNode::ChildExists(std::unique_ptr<XMLNode> const& node)
 
 bool const XMLNode::FindAttribute(std::string const& attrName)
 {
-	return std::find_if(attributes.begin(), attributes.end(), [&](std::unique_ptr<XMLAttribute> const& attr) {return strcmp(attr->GetName().c_str(), attrName.c_str()) == 0; }) != attributes.end();
+	return std::find_if(attributes.begin(), attributes.end(), [&](std::unique_ptr<XMLAttribute> const& attr) {return strcmp(attr->GetName().data(), attrName.c_str()) == 0; }) != attributes.end();
 }
 
 ///TODO: parse comments by node instead of parsing all at once

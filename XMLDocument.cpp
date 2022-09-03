@@ -199,7 +199,7 @@ ERR XMLDocument::ParseRootNode(std::string_view& in)
 
 //TODO: optionally parse comment? optimize this entire function.
 //note: since we're not erasing any text from the document string, currPos is used to keep track of where we're at in the parsing process
-ERR XMLDocument::ParseChildNodeRecursively(std::string_view& in, std::unique_ptr<XMLNode> const& parentNode, size_t currPos)
+ERR XMLDocument::ParseChildNodeRecursively(std::string_view const& in, std::unique_ptr<XMLNode> const& parentNode, size_t currPos)
 {
 	ERR result = ERR::ERR_OK;
 
@@ -243,21 +243,8 @@ ERR XMLDocument::ParseChildNodeRecursively(std::string_view& in, std::unique_ptr
 			continue;
 		}
 
-		auto const GetChildData = [](std::string_view& in, size_t& currPos, std::string_view const& nodeName)
-		{
-			size_t foundChildData = in.find(nodeName, currPos);
-			std::string_view data = "";
-			if (foundChildData != std::string_view::npos)
-			{
-				data = in.substr(currPos, foundChildData - currPos - 2);
-				currPos = foundChildData + 1;
-
-			}
-			return data;
-		};
-
 		//NOTE: not supporting mixed content at the moment. if mixex content no guarantees the parser will handle it correctly;
-		std::string_view childData = GetChildData(in, currPos,childNode->GetName());
+		std::string_view const childData = GetChildData(in, currPos,childNode->GetName());
 		if (childData.empty() || childData.find_first_not_of(WHITESPACE) == std::string_view::npos)
 		{
 			parentNode->AddChildNode(std::move(childNode));
@@ -320,71 +307,96 @@ ERR XMLDocument::ParseAttributes(std::string_view const& in, std::unique_ptr<XML
 	size_t currPos = 0;
 	for (size_t i = 0; i < attrCount; ++i)
 	{
-		auto const outValue = [](size_t& currPos, std::string_view const& instr, bool isName)
-		{
-			bool openingAttrTag = false;
-			std::string out = "";
-			for (size_t i = currPos; i < instr.size(); ++i)
-			{
-				const char character = instr[i];
-				if(isName)
-				{
-					if (character == ' ')
-					{
-						++currPos;
-						continue;
-					}
-					if (character == '=')
-					{
-						currPos = i + 1;
-						break;
-					}
-				}
-				else
-				{
-					if (character == '\"' || character == '\'')
-					{
-						if (openingAttrTag == false)
-						{
-							++currPos;
-							openingAttrTag = true;
-							continue;
-						}
-						else
-						{
-							currPos = i + 1;
-							break;
-						}
-					}
-				}
-				out.push_back(character);
-				++currPos;
-			}
-			return out;
-		};
 
-		std::string const name = outValue(currPos, in,true);
-		std::string const value = outValue(currPos, in,false);
+		size_t first = in.find_first_of(ALPHABET, currPos);
+		size_t last = in.find_first_of("=",first + 1);
+		std::string_view const name = in.substr(first, last - first);// GetAttribute(in, currPos, true);
+
+		first = in.find_first_of("\"",currPos) + 1;
+		last = in.find_first_of("\"", first + 1);// +first;
+		std::string_view const value = in.substr(first, last - first);
 
 		if (name.empty() || value.empty())
 		{
 			break;
 		}
 
-		if(name.find_first_not_of(WHITESPACE) ==  std::string::npos)
+		if (name.find_first_not_of(WHITESPACE) == std::string_view::npos)
+		{
 			break;
+		}
 
-		//TODO: if value was wrapped in single quote or double quote, check if &apos; or &quote; is inside the value. if so, convert that to ' or "
-		std::unique_ptr<XMLAttribute> attr = std::make_unique<XMLAttribute>(name, value);
 
-		ERR result = targetNode->AddAttribute(std::move(attr));
+		ERR result = targetNode->AddAttribute(std::make_unique<XMLAttribute>(name, value));// AddAttribute(std::move(attr));
 		if (result != ERR::ERR_OK)
 		{
 			return result;
 		}
+
+		currPos = last + 1;
+
 	}
 
 	return ERR::ERR_OK;
+}
+
+std::string_view const XMLDocument::GetChildData(std::string_view const& in, size_t& currPos, std::string_view const& childName)
+{
+
+	size_t foundChildData = in.find(childName, currPos);
+	std::string_view data = "";
+	if (foundChildData != std::string_view::npos)
+	{
+		data = in.substr(currPos, foundChildData - currPos - 2);
+		currPos = foundChildData + 1;
+
+	}
+	return data;
+}
+
+std::string_view const XMLDocument::GetAttribute(std::string_view const& in, size_t& currPos, bool isAttrName)
+{
+	std::string contents = "";
+	bool FoundOpeningTag = false;
+
+	for (size_t i = currPos; i < in.size(); ++i)
+	{
+		const char character = in[i];
+		if (isAttrName)
+		{
+			if (character == ' ')
+			{
+				++currPos;
+				continue;
+			}
+			if (character == '=')
+			{
+				currPos = i + 1;
+				break;
+			}
+		}
+		else
+		{
+			if (character == '\"' || character == '\'')
+			{
+				if (FoundOpeningTag == false)
+				{
+					++currPos;
+					FoundOpeningTag = true;
+					continue;
+				}
+				else
+				{
+					currPos = i + 1;
+					break;
+				}
+			}
+		}
+		contents.push_back(character);
+		++currPos;
+	}
+
+	return contents;
 }
 
 bool XMLDocument::ContainsAttributes(std::string_view const& in)

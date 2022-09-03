@@ -4,16 +4,16 @@
 class XMLAttribute
 {
 private:
-	std::string name;
-	std::string value;
+	std::string_view name;
+	std::string_view value;
 public:
 	XMLAttribute() noexcept = default;
 	XMLAttribute(std::string_view const& attrName, std::string_view const& attrValue) noexcept;
 	~XMLAttribute() = default;
 
-	void SetValue(const std::string& inValue) { value = inValue; }
-	void SetName(const std::string& inName) { name = inName; }
-	std::string GetName() const& { return name; }
+	void SetValue(const std::string_view& inValue) { value = inValue; }
+	void SetName(const std::string_view& inName) { name = inName; }
+	std::string_view GetName() const& { return name; }
 
 	template<typename T>
 	T GetValue()
@@ -26,6 +26,6 @@ public:
 			return ret;
 		}
 		else
-			return value;
+			return std::string(value);
 	}
 };

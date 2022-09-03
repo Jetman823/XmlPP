@@ -2270,22 +2270,14 @@
     </LIGHT>
   </LIGHTLIST>
   <OBJECTLIST>
-    <OBJECT name="Mansion_ani_A_light_add_b 01.elu">
-    </OBJECT>
-    <OBJECT name="Mansion_ani_A_light_add_b 02.elu">
-    </OBJECT>
-    <OBJECT name="Mansion_obj_txa_fire_a_01.elu">
-    </OBJECT>
-    <OBJECT name="Mansion_obj_txa_fire_a_02.elu">
-    </OBJECT>
-    <OBJECT name="Mansion_obj_flag_curtain_b 01.elu">
-    </OBJECT>
-    <OBJECT name="Mansion_obj_flag_curtain_b 02.elu">
-    </OBJECT>
-    <OBJECT name="Mansion_obj_flag_curtain_b 03.elu">
-    </OBJECT>
-    <OBJECT name="Mansion_obj_flag_curtain_b 04.elu">
-    </OBJECT>
+    <OBJECT name="Mansion_ani_A_light_add_b 01.elu"/>
+    <OBJECT name="Mansion_ani_A_light_add_b 02.elu"/>
+    <OBJECT name="Mansion_obj_txa_fire_a_01.elu"/>
+    <OBJECT name="Mansion_obj_txa_fire_a_02.elu"/>
+    <OBJECT name="Mansion_obj_flag_curtain_b 01.elu"/>
+    <OBJECT name="Mansion_obj_flag_curtain_b 02.elu"/>
+    <OBJECT name="Mansion_obj_flag_curtain_b 03.elu"/>
+    <OBJECT name="Mansion_obj_flag_curtain_b 04.elu"/>
   </OBJECTLIST>
   <DUMMYLIST>
     <DUMMY name="wait_pos_01">
