@@ -199,34 +199,34 @@ ERR XMLDocument::ParseRootNode(std::string_view& in)
 
 //TODO: optionally parse comment? optimize this entire function.
 //note: since we're not erasing any text from the document string, currPos is used to keep track of where we're at in the parsing process
-ERR XMLDocument::ParseChildNodeRecursively(std::string_view const& in, std::unique_ptr<XMLNode> const& parentNode, size_t currPos)
+ERR XMLDocument::ParseChildNodeRecursively(std::string_view const in, std::unique_ptr<XMLNode> const& parentNode, size_t currPos)
 {
 	ERR result = ERR::ERR_OK;
 
 	while (1)
 	{
-
-		while (in[currPos] != '<')
-		{
-			++currPos;
-		}
+		//search for the first opening tag character. if not found break out of loop
+		size_t nodeStart = in.find('<', currPos );
+		if (nodeStart == std::string_view::npos)
+			break;
 
 		//skip the opening tag character
-		++currPos;
+		++nodeStart;
 
 		//search for end of opening tag
-		size_t nodeEnd = in.find_first_of('>', currPos);
+		size_t const nodeEnd = in.find('>', nodeStart);
 
 		if (nodeEnd == std::string_view::npos)
 			break;
 
-		std::string_view nodeTag = in.substr(currPos, nodeEnd - currPos);
+		std::string_view const nodeTag = in.substr(nodeStart, nodeEnd - nodeStart);
 		if (nodeTag.empty() == true)
 			break;
 
 		//advance to the end of the opening tag
 		currPos = nodeEnd + 1;
 
+		//initialize childnode and read the entire opening tag name and attributes
 		std::unique_ptr<XMLNode> childNode = std::make_unique<XMLNode>();
 
 		result = ParseTag(nodeTag, childNode);
@@ -243,7 +243,7 @@ ERR XMLDocument::ParseChildNodeRecursively(std::string_view const& in, std::uniq
 			continue;
 		}
 
-		//NOTE: not supporting mixed content at the moment. if mixex content no guarantees the parser will handle it correctly;
+		//NOTE: not supporting mixed content at the moment. if mixed content no guarantees the parser will handle it correctly;
 		std::string_view const childData = GetChildData(in, currPos,childNode->GetName());
 		if (childData.empty() || childData.find_first_not_of(WHITESPACE) == std::string_view::npos)
 		{
@@ -268,7 +268,7 @@ ERR XMLDocument::ParseChildNodeRecursively(std::string_view const& in, std::uniq
 	return result;
 }
 
-ERR XMLDocument::ParseTag(std::string_view const& nodeData, std::unique_ptr<XMLNode> const& targetNode)
+ERR XMLDocument::ParseTag(std::string_view const nodeData, std::unique_ptr<XMLNode> const& targetNode)
 {
 
 	ERR result = ERR::ERR_OK;
@@ -299,7 +299,7 @@ ERR XMLDocument::ParseTag(std::string_view const& nodeData, std::unique_ptr<XMLN
 }
 
 
-ERR XMLDocument::ParseAttributes(std::string_view const& in, std::unique_ptr<XMLNode>const& targetNode)
+ERR XMLDocument::ParseAttributes(std::string_view const in, std::unique_ptr<XMLNode>const& targetNode)
 {
 	//get a count of how many attributes are contained within the xml node. NOTE: change later, equal sign is allowed within the attributes value
 	size_t attrCount = std::count(in.begin(), in.end(), '=');
@@ -308,10 +308,12 @@ ERR XMLDocument::ParseAttributes(std::string_view const& in, std::unique_ptr<XML
 	for (size_t i = 0; i < attrCount; ++i)
 	{
 
+		//get attribute name
 		size_t first = in.find_first_of(ALPHABET, currPos);
 		size_t last = in.find_first_of("=",first + 1);
-		std::string_view const name = in.substr(first, last - first);// GetAttribute(in, currPos, true);
+		std::string_view const name = in.substr(first, last - first);
 
+		//skip to value
 		first = in.find_first_of("\"",currPos) + 1;
 		last = in.find_first_of("\"", first + 1);// +first;
 		std::string_view const value = in.substr(first, last - first);
@@ -327,7 +329,7 @@ ERR XMLDocument::ParseAttributes(std::string_view const& in, std::unique_ptr<XML
 		}
 
 
-		ERR result = targetNode->AddAttribute(std::make_unique<XMLAttribute>(name, value));// AddAttribute(std::move(attr));
+		ERR result = targetNode->AddAttribute(std::make_unique<XMLAttribute>(name, value));
 		if (result != ERR::ERR_OK)
 		{
 			return result;
@@ -340,7 +342,7 @@ ERR XMLDocument::ParseAttributes(std::string_view const& in, std::unique_ptr<XML
 	return ERR::ERR_OK;
 }
 
-std::string_view const XMLDocument::GetChildData(std::string_view const& in, size_t& currPos, std::string_view const& childName)
+std::string_view const XMLDocument::GetChildData(std::string_view const in, size_t& currPos, std::string_view const& childName)
 {
 
 	size_t foundChildData = in.find(childName, currPos);

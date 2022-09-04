@@ -69,11 +69,11 @@ public:
 	ERR			   ParseDecl(std::string_view& in);
 	ERR			   ParseComment(std::string& in);
 	ERR			   ParseRootNode(std::string_view& in);
-	ERR			   ParseChildNodeRecursively(std::string_view const& in, std::unique_ptr<XMLNode> const& parentNode, size_t currPos = 0);
-	ERR			   ParseTag(std::string_view const& in, std::unique_ptr<XMLNode> const& parentNode);
-	ERR			   ParseAttributes(std::string_view const& in, std::unique_ptr<XMLNode> const& targetNode);
+	ERR			   ParseChildNodeRecursively(std::string_view const in, std::unique_ptr<XMLNode> const& parentNode, size_t currPos = 0);
+	ERR			   ParseTag(std::string_view const  in, std::unique_ptr<XMLNode> const& parentNode);
+	ERR			   ParseAttributes(std::string_view const in, std::unique_ptr<XMLNode> const& targetNode);
 
-	std::string_view const		   GetChildData(std::string_view const& in, size_t& currPos, std::string_view const& childName);
+	std::string_view const		   GetChildData(std::string_view const in, size_t& currPos, std::string_view const& childName);
 	std::string_view const		   GetAttribute(std::string_view const& in, size_t& currPos, bool isAttrName);
 //writer functionality
 public:
