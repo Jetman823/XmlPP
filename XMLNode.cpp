@@ -95,17 +95,17 @@ bool const XMLNode::FindAttribute(std::string const& attrName)
 
 ///TODO: parse comments by node instead of parsing all at once
 
-void XMLNode::AddComment(std::string const& comment)
+void XMLNode::AddComment(std::string_view comment)
 {
 	comments.push_back(comment);
 }
 
-std::vector<std::string> const XMLNode::GetCommentsByNode(std::shared_ptr<XMLNode> const& node)
+std::vector<std::string_view> const XMLNode::GetCommentsByNode(std::shared_ptr<XMLNode> const& node)
 {
 	return node->comments;
 }
 
-std::string const XMLNode::GetCommentByNodeIndex(int const& index, std::shared_ptr<XMLNode> const& node)
+std::string_view const XMLNode::GetCommentByNodeIndex(int const& index, std::shared_ptr<XMLNode> const& node)
 {
 	return node->comments.at(index);
 }

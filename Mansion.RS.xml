@@ -2,12 +2,14 @@
 
 <XML>
   <MATERIALLIST>
+	<!--test comment-->
     <MATERIAL name="gzd_map_Mansion_floor01_mt_con">
       <DIFFUSE>0.5882353 0.5882353 0.5882353</DIFFUSE>
       <AMBIENT>0.5882353 0.5882353 0.5882353</AMBIENT>
       <SPECULAR>0.9000000 0.9000000 0.9000000</SPECULAR>
       <DIFFUSEMAP>gzd_map_Mansion_floor01.bmp</DIFFUSEMAP>
     </MATERIAL>
+	<!-- test comment #2 -->
     <MATERIAL name="gzd_map_Mansion_wall01_mt_con">
       <DIFFUSE>0.5882353 0.5882353 0.5882353</DIFFUSE>
       <AMBIENT>0.5882353 0.5882353 0.5882353</AMBIENT>

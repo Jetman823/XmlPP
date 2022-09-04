@@ -59,15 +59,13 @@ private:
 	ReadFlags	readFlags;
 	WriteFlags  writeFlags;
 public:
-	//shared between parser/writer
-	std::vector<std::string> comments;
 	std::unique_ptr<XMLNode> const& GetRootNode() { return rootNode; }
 	bool const&    BomExists() { return doesBOMExist; }
 	std::string const& GetBOM() { return BOMString; }
 //parser functionality
 	ERR			   Parse(std::string& text);
 	ERR			   ParseDecl(std::string_view& in);
-	ERR			   ParseComment(std::string& in);
+	ERR			   ParseComment(std::string_view in,std::unique_ptr<XMLNode> const& parentNode);
 	ERR			   ParseRootNode(std::string_view& in);
 	ERR			   ParseChildNodeRecursively(std::string_view const in, std::unique_ptr<XMLNode> const& parentNode, size_t currPos = 0);
 	ERR			   ParseTag(std::string_view const  in, std::unique_ptr<XMLNode> const& parentNode);

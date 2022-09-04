@@ -3,6 +3,12 @@
 #include "XMLAttribute.h"
 #include "XMLErr.h"
 
+enum NodeType
+{
+	NT_NORMAL = 0,
+	NT_COMMENT = 1,
+};
+
 
 class XMLNode
 {
@@ -11,7 +17,7 @@ private:
 	std::string_view innerText;
 	std::vector<std::unique_ptr<XMLAttribute>> attributes;
 	std::vector<std::unique_ptr<XMLNode>> childNodes;
-	std::vector<std::string> comments;
+	std::vector<std::string_view> comments;
 public:
 	XMLNode() noexcept = default;
 	//Innertext is optional for a node, given that nodes can contain only attributes, or may contain childnodes (if childnodes are contained, there can be no inner text).
@@ -38,9 +44,9 @@ public:
 	//
 
 	//Comments
-	void AddComment(std::string const& in);
-	std::vector<std::string> const GetCommentsByNode(std::shared_ptr<XMLNode> const& parentNode);
-	std::string const GetCommentByNodeIndex(int const& index, std::shared_ptr<XMLNode> const& parentNode);
+	void AddComment(std::string_view in);
+	std::vector<std::string_view> const GetCommentsByNode(std::shared_ptr<XMLNode> const& parentNode);
+	std::string_view const GetCommentByNodeIndex(int const& index, std::shared_ptr<XMLNode> const& parentNode);
 	//
 
 	//check if child exists? idk why you would, but it's easy enough so why not
@@ -50,5 +56,7 @@ public:
 	XMLAttribute* const GetAttribute(size_t const& index);
 	XMLNode* const GetChildNode(size_t const& index);
 	bool const FindAttribute(std::string const& attrName);
+
+	NodeType nodeType;
 
 };

@@ -39,12 +39,8 @@ ERR XMLDocument::Parse(std::string&  text)
 	if (text.length() == 0)
 		return ERR::ERR_FILE_NOT_FOUND;
 
-	std::string_view data = text;
-
-	//TODO: parse comments
-
 	//If flag is set, remove comments from input
-	/*if (readFlags & ReadFlags::IgnoreComments)
+	if (readFlags & ReadFlags::IgnoreComments)
 	{
 		while (text.find("<!--") != std::string::npos)
 		{
@@ -53,16 +49,26 @@ ERR XMLDocument::Parse(std::string&  text)
 
 			text.erase(first, last - first + 4);
 		}
-	}*/
+	}
+
+	std::string_view data = text;
+
 
 	//If flag is not set, parse declaration
-	if (readFlags &~ ReadFlags::IgnoreDecl) 
+	if ((readFlags &~ ReadFlags::IgnoreDecl) == false) 
 	{
 		result = ParseDecl(data);
 		if (result != ERR::ERR_OK)
 		{
 			return result;
 		}
+	}
+	else
+	{
+		size_t declend = data.find("?>");
+		declend += 2;
+
+		data = data.substr(declend);
 	}
 
 	result = ParseRootNode(data);
@@ -127,23 +133,13 @@ ERR XMLDocument::ParseDecl(std::string_view& in)
 	return ERR::ERR_OK;
 }
 
-ERR XMLDocument::ParseComment(std::string& in)
+ERR XMLDocument::ParseComment(std::string_view in, std::unique_ptr<XMLNode> const& parentNode)
 {
-	while (in.find("<!--") != std::string::npos)
-	{
-		size_t first = in.find("<!--");
-		size_t last = in.find("-->");
-		std::string comment = in.substr(first + 4, last - (first + 4));
-		if (comment.find("--") != std::string::npos)
-		{
-			return ERR::ERR_FATAL_INVALID_COMMENT_CHAR;
-		}
-		comments.push_back(comment);
-		in.erase(first, last + 3 - first);
-
-	}
-
-	comments.push_back(in);
+	std::unique_ptr<XMLNode> commentNode = std::make_unique<XMLNode>();;
+	commentNode->SetName("");
+	commentNode->SetInnerText(in);
+	commentNode->nodeType = NT_COMMENT;
+	parentNode->AddChildNode(std::move(commentNode));
 	return ERR::ERR_OK;
 }
 
@@ -219,15 +215,25 @@ ERR XMLDocument::ParseChildNodeRecursively(std::string_view const in, std::uniqu
 		if (nodeEnd == std::string_view::npos)
 			break;
 
-		std::string_view const nodeTag = in.substr(nodeStart, nodeEnd - nodeStart);
+		std::string_view nodeTag = in.substr(nodeStart, nodeEnd - nodeStart);
 		if (nodeTag.empty() == true)
 			break;
 
 		//advance to the end of the opening tag
 		currPos = nodeEnd + 1;
 
+		if (in.at(nodeStart) == '!')
+		{
+			nodeTag = in.substr(nodeStart + 3, nodeEnd - (nodeStart + 5));
+			result = ParseComment(nodeTag, parentNode);
+			continue;
+		}
+
+
+
 		//initialize childnode and read the entire opening tag name and attributes
 		std::unique_ptr<XMLNode> childNode = std::make_unique<XMLNode>();
+		childNode->nodeType = NT_NORMAL;
 
 		result = ParseTag(nodeTag, childNode);
 		if (result != ERR::ERR_OK)
@@ -450,7 +456,7 @@ ERR XMLDocument::WriteDoc(std::ostream&out)
 	//if no decl declared, just set a default
 	else 
 	{
-		out << "<?xml version=\"1.0\" encoding=\"UTF-8\"";
+		out << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 	}
 
 	char firstLetter = rootNode->GetName().at(0);
@@ -482,41 +488,49 @@ ERR XMLDocument::WriteNodesRecursively(std::ostream& in, std::unique_ptr<XMLNode
 	{
 		if (itor == nullptr)
 			continue;
-		char firstLetter = itor->GetName().at(0);
-		if (::isdigit(firstLetter))
-		{
-			return ERR::ERR_FATAL_TAGNAME_FIRST_NUM;
-		}
 
-		in << std::string(indentCount, '\t') << "<" << itor->GetName();
-		for (auto& it : itor->GetAttributes())
+		if (itor->nodeType == NT_COMMENT)
 		{
-			in << " " << it->GetName() << "=" << "\"" << it->GetValue<std::string>() << "\"";
+			in << std::string(indentCount,'\t') <<  "<!--" << itor->GetInnerText() << "-->\n";
 		}
+		else
+		{
+			char firstLetter = itor->GetName().at(0);
+			if (::isdigit(firstLetter))
+			{
+				return ERR::ERR_FATAL_TAGNAME_FIRST_NUM;
+			}
 
-		if (itor->GetInnerText().length() > 0 && itor->GetChildNodes().size() == 0)
-		{
-			in << ">";
-			in << itor->GetInnerText();
-			in << "</" << itor->GetName() << ">" << "\n";
-		}
-		if (itor->GetInnerText().length() == 0 && itor->GetChildNodes().size() == 0 && itor->GetAttributes().size() > 0)
-		{
-			in << "/>" << "\n";
-		}
-	    if (itor->GetChildNodes().size() > 0)
-		{
-			in << ">\n";
-			++indentCount;
+			in << std::string(indentCount, '\t') << "<" << itor->GetName();
+			for (auto& it : itor->GetAttributes())
+			{
+				in << " " << it->GetName() << "=" << "\"" << it->GetValue<std::string>() << "\"";
+			}
 
-			WriteNodesRecursively(in, itor, indentCount);
-			in << std::string(indentCount > 0 ? --indentCount : 0, '\t') << "</" << itor->GetName() << ">" << "\n";
-		}
+			if (itor->GetInnerText().length() > 0 && itor->GetChildNodes().size() == 0)
+			{
+				in << ">";
+				in << itor->GetInnerText();
+				in << "</" << itor->GetName() << ">" << "\n";
+			}
+			if (itor->GetInnerText().length() == 0 && itor->GetChildNodes().size() == 0 && itor->GetAttributes().size() > 0)
+			{
+				in << "/>" << "\n";
+			}
+			if (itor->GetChildNodes().size() > 0)
+			{
+				in << ">\n";
+				++indentCount;
 
-		//maybe someone uses this to write a node that woudl just indicate a flag to enable/disable something in their program
-		if (itor->GetInnerText().length() == 0 && itor->GetChildNodes().size() == 0 && itor->GetAttributes().size() == 0)
-		{
-			in << "/>" << "\n";
+				WriteNodesRecursively(in, itor, indentCount);
+				in << std::string(indentCount > 0 ? --indentCount : 0, '\t') << "</" << itor->GetName() << ">" << "\n";
+			}
+
+			//maybe someone uses this to write a node that woudl just indicate a flag to enable/disable something in their program
+			if (itor->GetInnerText().length() == 0 && itor->GetChildNodes().size() == 0 && itor->GetAttributes().size() == 0)
+			{
+				in << "/>" << "\n";
+			}
 		}
 	}
 	return ERR::ERR_OK;
