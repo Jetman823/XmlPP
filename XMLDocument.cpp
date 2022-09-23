@@ -135,10 +135,10 @@ ERR XMLDocument::ParseDecl(std::string_view& in)
 
 ERR XMLDocument::ParseComment(std::string_view in, std::unique_ptr<XMLNode> const& parentNode)
 {
-	std::unique_ptr<XMLNode> commentNode = std::make_unique<XMLNode>();;
+	std::unique_ptr<XMLNode> commentNode = std::make_unique<XMLNode>();
 	commentNode->SetName("");
 	commentNode->SetInnerText(in);
-	commentNode->nodeType = NT_COMMENT;
+	commentNode->nodeType = NodeType::NT_COMMENT;
 	parentNode->AddChildNode(std::move(commentNode));
 	return ERR::ERR_OK;
 }
@@ -233,7 +233,7 @@ ERR XMLDocument::ParseChildNodeRecursively(std::string_view const in, std::uniqu
 
 		//initialize childnode and read the entire opening tag name and attributes
 		std::unique_ptr<XMLNode> childNode = std::make_unique<XMLNode>();
-		childNode->nodeType = NT_NORMAL;
+		childNode->nodeType = NodeType::NT_NORMAL;
 
 		result = ParseTag(nodeTag, childNode);
 		if (result != ERR::ERR_OK)
@@ -352,59 +352,16 @@ std::string_view const XMLDocument::GetChildData(std::string_view const in, size
 {
 
 	size_t foundChildData = in.find(childName, currPos);
-	std::string_view data = "";
-	if (foundChildData != std::string_view::npos)
+	if (foundChildData == std::string_view::npos)
 	{
-		data = in.substr(currPos, foundChildData - currPos - 2);
-		currPos = foundChildData + 1;
-
+		return "";
 	}
+
+	std::string_view data = in.substr(currPos, foundChildData - currPos - 2);
+	//advance to end of node and return data
+	currPos = foundChildData + 1;
+
 	return data;
-}
-
-std::string_view const XMLDocument::GetAttribute(std::string_view const& in, size_t& currPos, bool isAttrName)
-{
-	std::string contents = "";
-	bool FoundOpeningTag = false;
-
-	for (size_t i = currPos; i < in.size(); ++i)
-	{
-		const char character = in[i];
-		if (isAttrName)
-		{
-			if (character == ' ')
-			{
-				++currPos;
-				continue;
-			}
-			if (character == '=')
-			{
-				currPos = i + 1;
-				break;
-			}
-		}
-		else
-		{
-			if (character == '\"' || character == '\'')
-			{
-				if (FoundOpeningTag == false)
-				{
-					++currPos;
-					FoundOpeningTag = true;
-					continue;
-				}
-				else
-				{
-					currPos = i + 1;
-					break;
-				}
-			}
-		}
-		contents.push_back(character);
-		++currPos;
-	}
-
-	return contents;
 }
 
 bool XMLDocument::ContainsAttributes(std::string_view const& in)
@@ -489,7 +446,7 @@ ERR XMLDocument::WriteNodesRecursively(std::ostream& in, std::unique_ptr<XMLNode
 		if (itor == nullptr)
 			continue;
 
-		if (itor->nodeType == NT_COMMENT)
+		if (itor->nodeType == NodeType::NT_COMMENT)
 		{
 			in << std::string(indentCount,'\t') <<  "<!--" << itor->GetInnerText() << "-->\n";
 		}

@@ -5,7 +5,7 @@ XMLNode::XMLNode(const char* nodeName, const char* nodeInnerText) noexcept
 name(nodeName),
 innerText(nodeInnerText == nullptr? "" : nodeInnerText)
 {
-
+	nodeType = NodeType::NT_NORMAL;
 }
 
 ///this is called from xmlwriter and xmlreader, delete child node and any child nodes that exists within the instance
@@ -91,21 +91,4 @@ bool const XMLNode::ChildExists(std::unique_ptr<XMLNode> const& node)
 bool const XMLNode::FindAttribute(std::string const& attrName)
 {
 	return std::find_if(attributes.begin(), attributes.end(), [&](std::unique_ptr<XMLAttribute> const& attr) {return strcmp(attr->GetName().data(), attrName.c_str()) == 0; }) != attributes.end();
-}
-
-///TODO: parse comments by node instead of parsing all at once
-
-void XMLNode::AddComment(std::string_view comment)
-{
-	comments.push_back(comment);
-}
-
-std::vector<std::string_view> const XMLNode::GetCommentsByNode(std::shared_ptr<XMLNode> const& node)
-{
-	return node->comments;
-}
-
-std::string_view const XMLNode::GetCommentByNodeIndex(int const& index, std::shared_ptr<XMLNode> const& node)
-{
-	return node->comments.at(index);
 }

@@ -72,7 +72,6 @@ public:
 	ERR			   ParseAttributes(std::string_view const in, std::unique_ptr<XMLNode> const& targetNode);
 
 	std::string_view const		   GetChildData(std::string_view const in, size_t& currPos, std::string_view const& childName);
-	std::string_view const		   GetAttribute(std::string_view const& in, size_t& currPos, bool isAttrName);
 //writer functionality
 public:
 	void		   CreateDeclaration(const char* version, const char* encoding = 0, bool isStandalone = false);
